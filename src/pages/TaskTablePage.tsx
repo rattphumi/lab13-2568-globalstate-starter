@@ -7,16 +7,32 @@ import {
   Table,
   ActionIcon,
   Checkbox,
+  Badge,
 } from "@mantine/core";
 import { IconTrash } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import AddTaskModal from "../components/AddTaskModal";
 import { useTaskStore } from "../store/TaskItemStore";
 
 export default function TodoTablePage() {
-  const { tasks, addTask, toggleTask, removeTask } = useTaskStore();
+  const { tasks, addTask, toggleTask, removeTask, setTasks } = useTaskStore();
   const [modalOpened, setModalOpened] = useState(false);
+  const [lodading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (lodading) {
+      setLoading(false);
+      let savedTasks = localStorage.getItem("tasks");
+      if (savedTasks !== null) {
+        setTasks(JSON.parse(savedTasks));
+      }
+      return;
+    }
+
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
 
   const rows = tasks.map((task) => (
     <Table.Tr key={task.id}>
@@ -36,13 +52,22 @@ export default function TodoTablePage() {
       <Table.Td>
         {task.dueDate ? dayjs(task.dueDate).format("ddd MMM DD YYYY") : "-"}
       </Table.Td>
-      <Table.Td>{task.doneAt}</Table.Td>
+      <Table.Td>{task.doneAt? dayjs(task.doneAt).format("ddd MMM DD YYYY") : "-"}</Table.Td>
       <Table.Td>
         <ActionIcon color="red" onClick={() => removeTask(task.id)}>
           <IconTrash size={16} />
         </ActionIcon>
       </Table.Td>
       {/* เพิ่ม row assignees ตรงนี้*/}
+      <Table.Td w={450}>
+        {
+          task.assignees.map((assignee) => (
+            <Badge key={assignee} color="blue" variant="light" >
+              {assignee}
+            </Badge>
+          ))
+        }
+      </Table.Td>
     </Table.Tr>
   ));
 
@@ -71,6 +96,7 @@ export default function TodoTablePage() {
               <Table.Th>Completed</Table.Th>
               <Table.Th>Actions</Table.Th>
               {/* เพิ่ม table header assignees ตรงนี้*/}
+              <Table.Th>Assignees</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>
